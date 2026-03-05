@@ -9,8 +9,8 @@ terraform {
 
 # 1. Provider konfigurieren
 provider "google" {
-  project = "schaerl-security-cloud" 
-  region  = "europe-west3"                   # Frankfurt (DSGVO-konform!)
+  project = "DEINE-PROJEKT-ID-HIER-EINTRAGEN" # ⚠️ WICHTIG: Ersetze dies mit deiner Google Project-ID!
+  region  = "europe-west3"                    # Frankfurt (DSGVO-konform!)
 }
 
 # 2. Cloud Storage Bucket (Web-Hosting) erstellen
@@ -42,15 +42,15 @@ resource "google_storage_bucket_object" "index" {
 resource "google_storage_bucket_iam_binding" "public_rule" {
   bucket = google_storage_bucket.static_site.name
   role   = "roles/storage.objectViewer"
-  
+
   # Für das Portfolio machen wir es public, damit du es zeigen kannst.
   # Akademischer Hinweis für Prof. Lu: Hier würde im Echtbetrieb "user:polizei@bayern.de" stehen!
   members = [
-    "allUsers", 
+    "allUsers",
   ]
 }
 
-# 5. Ausgabe des fertigen Links
+# 5. Ausgabe des fertigen Links (KORRIGIERT)
 output "website_url" {
   value = "[https://storage.googleapis.com/$](https://storage.googleapis.com/$){google_storage_bucket.static_site.name}/index.html"
 }
