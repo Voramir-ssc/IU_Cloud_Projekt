@@ -9,8 +9,8 @@ terraform {
 
 # 1. Provider konfigurieren
 provider "google" {
-  project = "DEINE-PROJEKT-ID-HIER-EINTRAGEN" # ⚠️ WICHTIG: Ersetze dies mit deiner Google Project-ID!
-  region  = "europe-west3"                    # Frankfurt (DSGVO-konform!)
+  project = "schaerl-security-cloud" # ⚠️ WICHTIG: Ersetze dies mit deiner Google Project-ID!
+  region  = "europe-west3"           # Frankfurt (DSGVO-konform!)
 }
 
 # 2. Cloud Storage Bucket (Web-Hosting) erstellen
@@ -52,5 +52,5 @@ resource "google_storage_bucket_iam_binding" "public_rule" {
 
 # 5. Ausgabe des fertigen Links (KORRIGIERT)
 output "website_url" {
-  value = "[https://storage.googleapis.com/$](https://storage.googleapis.com/$){google_storage_bucket.static_site.name}/index.html"
+  value = "https://storage.googleapis.com/${google_storage_bucket.static_site.name}/index.html"
 }
