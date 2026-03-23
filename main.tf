@@ -7,50 +7,70 @@ terraform {
   }
 }
 
-# Konfiguration des Google Cloud Providers
 provider "google" {
-  project = "schaerl-security-cloud"
-  region  = "europe-west3"           # Frankfurt (DSGVO-konform)
+  project = var.project_id
+  region  = var.region
 }
 
-# Erstellung des Cloud Storage Buckets für statisches Web-Hosting
-resource "google_storage_bucket" "static_site" {
-  name          = "schaerl-security-dashboard-${random_id.bucket_id.hex}" # Sichert die weltweite Eindeutigkeit des Bucket-Namens
-  location      = "europe-west3"
-  force_destroy = true
-
-  website {
-    main_page_suffix = "index.html"
-  }
-  uniform_bucket_level_access = true
-}
-
-# Hilfsressource für einen zufälligen Bucket-Namen
 resource "random_id" "bucket_id" {
   byte_length = 4
 }
 
-# Automatischer Upload der index.html in den Storage Bucket
+# Best Practice: Separater Audit-Log-Bucket
+resource "google_storage_bucket" "log_bucket" {
+  name          = "${var.bucket_name_prefix}-logs-${random_id.bucket_id.hex}"
+  location      = var.region
+  force_destroy = true
+  labels        = var.tags
+  uniform_bucket_level_access = true
+}
+
+# Haupt-Bucket für statisches Web-Hosting
+resource "google_storage_bucket" "static_site" {
+  name          = "${var.bucket_name_prefix}-${random_id.bucket_id.hex}"
+  location      = var.region
+  force_destroy = true
+  labels        = var.tags
+  
+  uniform_bucket_level_access = true
+
+  website {
+    main_page_suffix = var.index_document
+  }
+
+  versioning {
+    enabled = true
+  }
+  
+logging {
+    log_bucket = google_storage_bucket.log_bucket.name
+  }
+
+  lifecycle_rule {
+    condition {
+      age = 30
+    }
+    action {
+      type = "Delete"
+    }
+  }
+}
+
+# Upload der statischen Dashboard-Datei
 resource "google_storage_bucket_object" "index" {
-  name         = "index.html"
-  source       = "app/index.html"
+  name         = var.index_document
+  source       = "app/${var.index_document}"
   bucket       = google_storage_bucket.static_site.name
   content_type = "text/html"
 }
 
-# Konfiguration der IAM-Richtlinien (Access Management)
+# IAM: Triftiger Grund für allUsers = Öffentliche Erreichbarkeit des "Hello World" Dashboards
 resource "google_storage_bucket_iam_binding" "public_rule" {
   bucket = google_storage_bucket.static_site.name
   role   = "roles/storage.objectViewer"
-
-  # Öffentlicher Lesezugriff für Demonstrationszwecke des Portfolios
-  # Akademischer Hinweis für Prof. Lu: Im Echtbetrieb wäre der Zugriff hier restriktiv (z.B. "user:polizei@bayern.de")!
   members = [
-    "allUsers",
+    "allUsers", 
   ]
 }
 
-# Ausgabe der resultierenden Website-URL nach dem Deployment
-output "website_url" {
-  value = "https://storage.googleapis.com/${google_storage_bucket.static_site.name}/index.html"
-}
+
