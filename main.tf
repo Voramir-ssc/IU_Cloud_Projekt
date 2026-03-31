@@ -16,22 +16,22 @@ resource "random_id" "bucket_id" {
   byte_length = 4
 }
 
-# Best Practice: Separater Audit-Log-Bucket
+# Best Practice: Separater Audit-Log-Bucket zur forensischen Protokollierung
 resource "google_storage_bucket" "log_bucket" {
-  name          = "${var.bucket_name_prefix}-logs-${random_id.bucket_id.hex}"
-  location      = var.region
-  force_destroy = true
-  labels        = var.tags
+  name                        = "${var.bucket_name_prefix}-logs-${random_id.bucket_id.hex}"
+  location                    = var.region
+  force_destroy               = true
+  labels                      = var.tags
   uniform_bucket_level_access = true
 }
 
-# Haupt-Bucket für statisches Web-Hosting
+# Haupt-Bucket für statisches Web-Hosting inkl. Lifecycle & Versionierung
 resource "google_storage_bucket" "static_site" {
   name          = "${var.bucket_name_prefix}-${random_id.bucket_id.hex}"
   location      = var.region
   force_destroy = true
   labels        = var.tags
-  
+
   uniform_bucket_level_access = true
 
   website {
@@ -41,8 +41,8 @@ resource "google_storage_bucket" "static_site" {
   versioning {
     enabled = true
   }
-  
-logging {
+
+  logging {
     log_bucket = google_storage_bucket.log_bucket.name
   }
 
@@ -64,12 +64,12 @@ resource "google_storage_bucket_object" "index" {
   content_type = "text/html"
 }
 
-# IAM: Triftiger Grund für allUsers = Öffentliche Erreichbarkeit des "Hello World" Dashboards
+# IAM-Zuweisung: Temporärer Lesezugriff zur Demonstration der Erreichbarkeit
 resource "google_storage_bucket_iam_binding" "public_rule" {
   bucket = google_storage_bucket.static_site.name
   role   = "roles/storage.objectViewer"
   members = [
-    "allUsers", 
+    "allUsers",
   ]
 }
 
